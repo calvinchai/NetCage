@@ -32,11 +32,12 @@ NetCage is a user-level network access control tool designed to provide network 
 
 ---
 
-## Installation
+## Build
 
 ```bash
 git clone https://github.com/YourUsername/NetGuardian.git
 cd NetGuardian
+cargo build
 ```
 
 ---
@@ -46,13 +47,12 @@ cd NetGuardian
 1. **Basic Usage:**
 
     ```bash
-    netcage -r [RULE] -p [PROCESS_NAME/ID] 
+    netcage -p [PROFILE] [COMMAND]
     ```
 
-2. **List Current Rules:**
-
+2. 
     ```bash
-    netcage --list
+    
     ```
 
 For more detailed usage instructions, please refer to the [User Guide](link-to-user-guide.md).
