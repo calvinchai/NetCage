@@ -2,6 +2,8 @@ extern crate nix;
 extern crate syscalls;
 extern crate clap;
 extern crate serde_yaml;
+
+use std::collections::HashMap;
 use nix::sys::ptrace;
 use nix::sys::signal::Signal;
 use nix::sys::wait::waitpid;
@@ -12,6 +14,7 @@ use std::path::PathBuf;
 use std::fs;
 use syscalls::Sysno;
 use clap::{Parser};
+use libc::pid_t;
 use serde::{Serialize, Deserialize};
 #[derive(Parser)]
 #[command(author, version, about, long_about)]
@@ -71,9 +74,18 @@ fn main() {
 }
 
 fn trace_child(child: nix::unistd::Pid, profile: Profile) {
-    let mut in_syscall = false;
+    let mut children:HashMap<pid_t,bool> = HashMap::new();
+    children.insert(child.as_raw(), false);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    ptrace::setoptions(
+        child,
+        ptrace::Options::PTRACE_O_TRACEFORK |
+            ptrace::Options::PTRACE_O_TRACEVFORK |
+            ptrace::Options::PTRACE_O_TRACECLONE|
+    ).expect("setoptions failed.");
     loop {
-        let status = waitpid(child, None).expect("Failed to waitpid");
+        // println!("waitpid");
+        let status = waitpid(nix::unistd::Pid::from_raw(-1), None).expect("Failed to waitpid");
         // println!("status: {:?}", status);
         // ptrace::setoptions(
         //     child,
@@ -81,11 +93,17 @@ fn trace_child(child: nix::unistd::Pid, profile: Profile) {
         //         ptrace::Options::PTRACE_O_TRACEVFORK |
         //         ptrace::Options::PTRACE_O_TRACECLONE,
         // ).expect("setoptions failed.");
-        if let nix::sys::wait::WaitStatus::Stopped(_, Signal::SIGTRAP) = status {
-            if in_syscall {
-                in_syscall = false;
+        println!("status: {:?}", status);
+        if let nix::sys::wait::WaitStatus::Stopped(pid, Signal::SIGTRAP) = status {
+        // if let nix::sys::wait::WaitStatus::PtraceEvent(pid, Signal::SIGTRAP, _) = status {
+        // if let nix::sys::wait::WaitStatus::PtraceSyscall(pid) = status {
+            if children.contains_key(&pid.as_raw()) && *children.get(&pid.as_raw()).unwrap() {
+                children.insert(pid.as_raw(), false);
+
             } else {
-                let regs = ptrace::getregs(child).expect("Failed to getregs");
+
+                children.insert(pid.as_raw(), true);
+                let regs = ptrace::getregs(pid).expect("Failed to getregs");
                 if regs.orig_rax == Sysno::connect as u64 {
                     // Additional logic to check the arguments when the child makes the `connect` syscall
                     let sockaddr_ptr = regs.rsi;
@@ -97,10 +115,9 @@ fn trace_child(child: nix::unistd::Pid, profile: Profile) {
                     for i in 0..(sockaddr_data.len() / std::mem::size_of::<u64>()) {
                         let data =
                             ptrace::read(
-                                child,
+                                pid,
                                 (sockaddr_ptr as usize + i * std::mem::size_of::<u64>()) as *mut _,
-                            )
-                                .expect("Failed to read data");
+                            ).expect("Failed to read data");
                         sockaddr_data
                             [i * std::mem::size_of::<u64>()..(i + 1) * std::mem::size_of::<u64>()]
                             .copy_from_slice(&data.to_ne_bytes());
@@ -114,27 +131,37 @@ fn trace_child(child: nix::unistd::Pid, profile: Profile) {
                     let addr_str = format!("{}.{}.{}.{}", addr[0], addr[1], addr[2], addr[3]);
                     if !profile.allowed_ips.contains(&addr_str)  {
                         println!("block connect to {:?}:{}", addr, port);
-                        let mut regs = ptrace::getregs(child).expect("Failed to getregs");
+                        let mut regs = ptrace::getregs(pid).expect("Failed to getregs");
                         regs.rax = -1i64 as u64;
-                        ptrace::setregs(child, regs).expect("Failed to setregs");
+                        ptrace::setregs(pid, regs).expect("Failed to setregs");
                     }
-                    // if addr != [127, 0, 0, 1] {
-                    //     println!("block connect to {:?}:{}", addr, port);
-                    //     let mut regs = ptrace::getregs(child).expect("Failed to getregs");
-                    //     regs.rax = -1i64 as u64;
-                    //     ptrace::setregs(child, regs).expect("Failed to setregs");
-                    // }
+                }
+            }
+
+            ptrace::syscall(pid, None).expect("Failed to ptrace::syscall");
+        } else {
+            if let nix::sys::wait::WaitStatus::Exited(pid, _) = status  {
+                if pid == child{
+                    break;
                 }
 
-                in_syscall = true;
             }
-
-            ptrace::syscall(child, None).expect("Failed to ptrace::syscall");
-        } else {
-            if let nix::sys::wait::WaitStatus::Exited(_, _) = status {
+            if let nix::sys::wait::WaitStatus::Signaled(pid, _, _) = status  {
+                // if pid == child{
+                //     break;
+                // }
                 break;
             }
-            ptrace::cont(child, None).expect("Failed to ptrace::cont");
+            match ptrace::cont(status.pid().unwrap(), None){
+                Ok(_) => {},
+                Err(_) => {
+                    // println!("waitpid");
+                    // let status = waitpid(nix::unistd::Pid::from_raw(-1), None).expect("Failed to waitpid");
+                    // println!("status: {:?}", status);
+                    // ptrace::cont(status.pid().unwrap(), None).expect("Failed to ptrace::cont");
+                }
+            }
+
         }
     }
 }
