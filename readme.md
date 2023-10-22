@@ -1,6 +1,6 @@
 
 ---
-# NetCage: Network Address Controller
+# NetCage: User-Level Network Access Controller
 
 
 ## TODO:
