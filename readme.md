@@ -5,7 +5,7 @@
 
 ## TODO:
 - [ ] Add a `--verbose` option
-- [ ] Track all child processes
+- [X] Track all child processes
 - [ ] Support IPv6
 - [ ] Support Listening
 - [ ] Support domain names
