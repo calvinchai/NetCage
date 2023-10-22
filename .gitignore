@@ -1,4 +1,6 @@
 /target
 /.idea
+/release
+/.github
 *.c
 *.out
