@@ -6,20 +6,23 @@
 ## TODO:
 - [ ] Add a `--verbose` option
 - [X] Track all child processes
-- [ ] Support IPv6
+- [X] Support IPv6
+- [ ] Support more network system calls
+- [ ] Support add rule in arguments
+- [ ] Support non-standard IPV6 address
 - [ ] Support Listening
 - [ ] Support domain names
 - [ ] Support port filter
 - [ ] Support wildcard
 
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **License:** MIT
 
 ---
 
 ## Description
 
-NetCage is a user-level network access control tool designed to provide network access restrictions for processes, particularly in environments where you don't have root access or are in incompatible containers. Unlike traditional methods such as iptables or firewalls, NetGuardian offers an alternative approach to ensure your processes remain within defined network parameters.
+NetCage is a user-level network access control tool designed to provide network access restrictions for processes, particularly in environments where you don't have root access or are in incompatible containers. Unlike traditional methods such as iptables or firewalls, NetCage offers an alternative approach through Ptrace to ensure your processes remain within defined network parameters.
 
 ---
 
@@ -50,18 +53,20 @@ cargo build
     netcage -p [PROFILE] [COMMAND]
     ```
 
-2. 
-    ```bash
-    
-    ```
+[//]: # (2. )
 
-For more detailed usage instructions, please refer to the [User Guide](link-to-user-guide.md).
+[//]: # (    ```bash)
+
+[//]: # (    )
+[//]: # (    ```)
+
+For more detailed usage instructions, please refer to the [User Guide](docs/GUIDE.md).
 
 ---
 
 ## Contributing
 
-We welcome contributions! Please check out our [CONTRIBUTING.md](link-to-contributing-guide.md) for guidelines.
+We welcome contributions! Please check out our [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ---
 
@@ -73,7 +78,7 @@ For support or to provide feedback, please raise an issue on our [GitHub reposit
 
 ## License
 
-NetGuardian is released under the [MIT License](link-to-license-file.md).
+NetCage is released under the [MIT License](link-to-license-file.md).
 
 ---
 
@@ -84,9 +89,10 @@ Special thanks to the community and everyone who contributed to making this proj
 ---
 
 ## Changelog
+- **1.1.0:** Added support for IPv6 and tracking child processes.
 
 - **1.0.0:** Initial release.
 
-For a detailed changelog, refer to the [CHANGELOG.md](link-to-changelog.md).
+For a detailed changelog, refer to the [CHANGELOG.md](docs/CHANGELOG.md).
 
 ---
